@@ -1,55 +1,106 @@
 #!/usr/bin/python
+import pandas as pd
 
-import sys
-import pickle
-sys.path.append("../tools/")
+from sklearn.grid_search import GridSearchCV
+from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.cross_validation import train_test_split
 
 from tools.feature_format import featureFormat, targetFeatureSplit
 from tester import dump_classifier_and_data
+from utils import get_original_data, get_k_best_features
 
-### Task 1: Select what features you'll use.
-### features_list is a list of strings, each of which is a feature name.
-### The first feature must be "poi".
-features_list = ['poi','salary'] # You will need to use more features
 
-### Load the dictionary containing the dataset
-with open("final_project_dataset.pkl", "r") as data_file:
-    data_dict = pickle.load(data_file)
+# Task 0: Preview and prepare the data.
+# -----------------------------------------------------------------------------------------
+data = get_original_data()
+df = pd.DataFrame.from_dict(data).transpose()
 
-### Task 2: Remove outliers
-### Task 3: Create new feature(s)
-### Store to my_dataset for easy export below.
-my_dataset = data_dict
+# Convert some fields to float
+float_columns = ['bonus', 'deferral_payments', 'deferred_income', 'director_fees',
+ 'exercised_stock_options', 'expenses', 'from_messages', 'from_poi_to_this_person',
+ 'from_this_person_to_poi', 'loan_advances', 'long_term_incentive', 'other',
+ 'restricted_stock', 'restricted_stock_deferred', 'salary', 'shared_receipt_with_poi',
+ 'to_messages', 'total_payments', 'total_stock_value']
 
-### Extract features and labels from dataset for local testing
-data = featureFormat(my_dataset, features_list, sort_keys = True)
+df[float_columns] = df[float_columns].astype('float')
+
+# Task 1: Select what features you'll use.
+# -----------------------------------------------------------------------------------------
+
+initial_feature_list = ['bonus', 'exercised_stock_options', 'expenses',
+                        'from_messages', 'from_poi_to_this_person',
+                        'from_this_person_to_poi',  'long_term_incentive', 'other',
+                        'restricted_stock', 'salary', 'shared_receipt_with_poi',
+                        'to_messages', 'total_payments', 'total_stock_value']
+
+
+# Task 2: Remove outliers
+# -----------------------------------------------------------------------------------------
+
+# Remove TOTAL, This is total for other field.
+df.drop(df.index[df.index == 'TOTAL'], inplace=True)
+
+# Remove THE TRAVEL AGENCY IN THE PARK, Does not belong in the data.
+df.drop(df.index[df.index == 'THE TRAVEL AGENCY IN THE PARK'], inplace=True)
+
+# Remove LOCKHART EUGENE E, Only a single field has data, the rest is NaN.
+df.drop(df.index[df.index == 'LOCKHART EUGENE E'], inplace=True)
+
+
+# Task 3: Create new feature(s)
+# -----------------------------------------------------------------------------------------
+
+# Fraction from POI
+df['fraction_from_poi'] = df.apply(lambda x:x['from_poi_to_this_person'] / x['to_messages'], axis=1)
+# Fraction to POI
+df['fraction_to_poi'] = df.apply(lambda x:x['from_this_person_to_poi'] / x['from_messages'], axis=1)
+
+initial_feature_list += ['fraction_from_poi', 'fraction_to_poi']
+
+# Transform the data back to dictionary format from Panda Dataframe
+my_dataset = df.fillna('NaN').transpose().to_dict()
+
+# Task 4: Run a classifier
+# -----------------------------------------------------------------------------------------
+
+# Let's reduce the features to 4 for now.
+kbest_features = get_k_best_features(my_dataset, ['poi'] + initial_feature_list, 4)
+kbest_features = [item[0] for item in kbest_features[:4]]
+
+# The first feature must be "poi".
+features_list = ['poi'] + kbest_features
+
+# Setup label and features
+data = featureFormat(my_dataset, features_list)
 labels, features = targetFeatureSplit(data)
 
-### Task 4: Try a varity of classifiers
-### Please name your classifier clf for easy export below.
-### Note that if you want to do PCA or other multi-stage operations,
-### you'll need to use Pipelines. For more info:
-### http://scikit-learn.org/stable/modules/pipeline.html
+# Task 5: Tune classifier
+# -----------------------------------------------------------------------------------------
 
-# Provided to give you a starting point. Try a variety of classifiers.
-from sklearn.naive_bayes import GaussianNB
-clf = GaussianNB()
+# We will be using GridSearchCV to find the optimum
+# parameters.
 
-### Task 5: Tune your classifier to achieve better than .3 precision and recall 
-### using our testing script. Check the tester.py script in the final project
-### folder for details on the evaluation method, especially the test_classifier
-### function. Because of the small size of the dataset, the script uses
-### stratified shuffle split cross validation. For more info: 
-### http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
+# Parameters to be tuned
+metrics = ['minkowski', 'euclidean', 'manhattan']
+weights = ['uniform', 'distance']
+n_neighbors = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+param_grid_knc = dict(metric=metrics, weights=weights, n_neighbors=n_neighbors)
 
-# Example starting point. Try investigating other evaluation techniques!
-from sklearn.cross_validation import train_test_split
+# Setup cross validation
+cv = StratifiedShuffleSplit(labels, 1000, random_state=17)
+
+# Run the GridSearch
+clf_knc = GridSearchCV(KNeighborsClassifier(), param_grid=param_grid_knc, cv=cv)
+clf_knc.fit(features, labels)
+
+clf = clf_knc.best_estimator_
+
+
+# Task 6: Check result
+# -----------------------------------------------------------------------------------------
+
 features_train, features_test, labels_train, labels_test = \
     train_test_split(features, labels, test_size=0.3, random_state=42)
-
-### Task 6: Dump your classifier, dataset, and features_list so anyone can
-### check your results. You do not need to change anything below, but make sure
-### that the version of poi_id.py that you submit can be run on its own and
-### generates the necessary .pkl files for validating your results.
 
 dump_classifier_and_data(clf, my_dataset, features_list)
