@@ -1,13 +1,11 @@
 #!/usr/bin/python
-from __future__ import absolute_import
-
 import pickle
 
 from sklearn.cross_validation import train_test_split
 from sklearn.feature_selection import SelectKBest
 
-from .tools.feature_format import featureFormat, targetFeatureSplit
-from .tester import dump_classifier_and_data, load_classifier_and_data, test_classifier
+from tools.feature_format import featureFormat, targetFeatureSplit
+from tester import dump_classifier_and_data, load_classifier_and_data, test_classifier
 
 
 def setup_and_test(my_dataset, features_list, classifier, evaluation_func=None):
