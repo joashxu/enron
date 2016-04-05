@@ -4,7 +4,7 @@ import sys
 import pickle
 sys.path.append("../tools/")
 
-from feature_format import featureFormat, targetFeatureSplit
+from tools.feature_format import featureFormat, targetFeatureSplit
 from tester import dump_classifier_and_data
 
 ### Task 1: Select what features you'll use.
