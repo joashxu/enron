@@ -189,7 +189,7 @@ The original dataset has 146 rows and 21 features. On exploring I found 2 entrie
 <p>The data has 21 features. I first reduce this to 14 by excluding features that has little information, 60% or more of the data are NaN. I then added 2 new features. The new features are based on the existing features.
 There are 'from_poi_to_this_person' and 'from_this_person_to_poi' features.
 The features are not that helpful. So I added two new features that scale these features by the total number.</p>
-<p>I did not do scaling to any of the features (I did try to add it when running Linear SVM to see if it can improve the result). I think the data is highly skewed, there are only a handful of POI. And those people usually are outliers in term of bonus, salary, etc. This lead me to believe no scaling is needed.</p>
+<p>I perform feature scaling when I perform Linear SVM and K-Nearest-Neighbor. Initially, I did not perform scaling on the features for K-Nearest-Neighbor, and the result was actually good. But for K-Nearest-Neighbor, scaling should be performed all the time, because the distance between points causes the clustering to happen.</p>
 <p>I then run SelectKbest algorithm to reduce this to 4. I feel like this is a good number to start, and the plan was to start with 4 and then slowly add more features if needed.</p>
 <p>The top 4 features scores are:</p>
 <ul>
@@ -208,23 +208,30 @@ The features are not that helpful. So I added two new features that scale these 
 <p>I started out using Gaussian Naive Bayes, I then try to use Linear SVC before moving to KNeighbors
 The result of the Linear SVC is the worst, both GNB and KNeighbors get the level of Precision and Recall that we set.</p>
 <p><strong>4. Parameter tuning</strong></p>
+<p>Parameter tuning can be simply thought of as process which one goes through in which they optimize the parameters that impact the model in order to enable the algorithm to perform the best. The "best" of course need to be defined.</p>
+<p>One of the difficulties is that learning algorithms require us to set parameters before we use the models (or at least to set constraints on those parameters). Our goal, is to set those parameters to so optimal values that enable us to complete a learning task in the best way possible. Thus, tuning an algorithm or machine learning technique.</p>
+<p>Without this process we might not find the optimal parameters which prohibit us from achieving a high quality result.</p>
+<p>This process can be difficult. In this project I use GridSearchCV provided by scikit-learn.</p>
 <p>For my selected algorithm KNeighbors, I run the algorithm to give me a baseline and the result without parameter tunnings are:</p>
 <p>Precision: 0.65971    Recall: 0.26850</p>
-<p>I then run GridSearchCV to tune the parameter. The parameters before and after tuning is almost the same except the weight parameters. Even so, there is quite an improvement. Our result after tuning:</p>
-<p>Precision: 0.69602    Recall: 0.36750</p>
+<p>I then run GridSearchCV to tune the parameter. Our result after tuning:</p>
+<p>Precision: 0.32891    Recall: 0.33450</p>
+<p>Note that I added scoring parameter to the GridSearchCV. Otherwise we won't be able to get better then 0.3 result.
+We do sacrifice the precision though.</p>
 <p><strong>5. Validation</strong></p>
 <p>Validation is a process where we split data into 2 partitions, training and testing, and then use training for our  algorithm of choice and then use the testing partition to get the result. Without this process the algorithm might predict a good score but failed anything useful beyond the seen data or <em>overfitting</em>.</p>
 <p>In this project I utilize scikit-learn StratifiedShuffleSplit.
-Which will do rearrange the data as to ensure each fold is a good representative of the whole (stratification) and shuffle the data.</p>
+In summary it is a merge of StratifiedKFold and ShuffleSplit, which returns stratified randomized folds.</p>
+<p>ShuffleSplit will split the data and perform a shuffling on the data. StratifiedKFold will split the data and arrange the data to ensure each fold is a good representative of the whole. So when both of them combined, it essentially rearrange the data as to ensure each fold is a good representative of the whole (stratification) and shuffle the data.</p>
 <p><strong>6. Evaluation</strong></p>
 <p>The project uses 2 evaluation metrics, Precision and Recall. To be specific, we aim to have better then 0.3 for both Precision and Recall.</p>
 <p>The result for the project are:</p>
 <ul>
-<li>Precision: 0.69602    </li>
-<li>Recall: 0.36750</li>
+<li>Precision: 0.32891    </li>
+<li>Recall: 0.33450</li>
 </ul>
-<p>That means when the algorithm mark someone as POI, the algorithm is correct for almost 70% of the time. 
-We missed several POI, we got only around 36% correct POI out of all possible POI.</p>
+<p>That means when the algorithm mark someone as POI, the algorithm is correct for almost 33% of the time. 
+We missed several POI, we got only around 33% correct POI out of all possible POI.</p>
 
 </div>
 </div>
@@ -4742,7 +4749,7 @@ I will limit the number of features to be 4 for now and add it later if it is ne
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="3.1-Gaussian-Naive-Bayes">3.1 Gaussian Naive Bayes<a class="anchor-link" href="#3.1-Gaussian-Naive-Bayes">&#182;</a></h3><p>Let's rerun the Gaussian Naive Bayes with the new features.</p>
+<p>Also let's try to import neccessary library.</p>
 
 </div>
 </div>
@@ -4750,6 +4757,32 @@ I will limit the number of features to be 4 for now and add it later if it is ne
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[32]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">MinMaxScaler</span>
+<span class="kn">from</span> <span class="nn">sklearn.grid_search</span> <span class="kn">import</span> <span class="n">GridSearchCV</span>
+<span class="kn">from</span> <span class="nn">sklearn.cross_validation</span> <span class="kn">import</span> <span class="n">StratifiedShuffleSplit</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="3.1-Gaussian-Naive-Bayes">3.1 Gaussian Naive Bayes<a class="anchor-link" href="#3.1-Gaussian-Naive-Bayes">&#182;</a></h3><p>Let's rerun the Gaussian Naive Bayes with the new features.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[33]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span class="n">clf</span> <span class="o">=</span> <span class="n">GaussianNB</span><span class="p">()</span>
@@ -4800,7 +4833,7 @@ Let's see if other algorithm can beat this.</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[33]:</div>
+<div class="prompt input_prompt">In&nbsp;[34]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">svm</span>
@@ -4823,8 +4856,8 @@ Let's see if other algorithm can beat this.</p>
      intercept_scaling=1, loss=&apos;squared_hinge&apos;, max_iter=1000,
      multi_class=&apos;ovr&apos;, penalty=&apos;l2&apos;, random_state=None, tol=0.0001,
      verbose=0)
-	Accuracy: 0.68031	Precision: 0.17393	Recall: 0.28750	F1: 0.21674	F2: 0.25429
-	Total predictions: 13000	True positives:  575	False positives: 2731	False negatives: 1425	True negatives: 8269
+	Accuracy: 0.67623	Precision: 0.17846	Recall: 0.30650	F1: 0.22557	F2: 0.26804
+	Total predictions: 13000	True positives:  613	False positives: 2822	False negatives: 1387	True negatives: 8178
 
 </pre>
 </div>
@@ -4846,13 +4879,10 @@ Let's see if other algorithm can beat this.</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[34]:</div>
+<div class="prompt input_prompt">In&nbsp;[35]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
-<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">MinMaxScaler</span>
-
-<span class="n">scaler</span> <span class="o">=</span> <span class="n">MinMaxScaler</span><span class="p">()</span>
+<div class=" highlight hl-ipython2"><pre><span class="n">scaler</span> <span class="o">=</span> <span class="n">MinMaxScaler</span><span class="p">()</span>
 <span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([(</span><span class="s">&#39;normalization&#39;</span><span class="p">,</span> <span class="n">scaler</span><span class="p">),</span>
                      <span class="p">(</span><span class="s">&#39;classifier&#39;</span><span class="p">,</span> <span class="n">clf</span><span class="p">)</span>
 <span class="p">])</span>
@@ -4898,7 +4928,7 @@ Let's see if other algorithm can beat this.</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[35]:</div>
+<div class="prompt input_prompt">In&nbsp;[36]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span class="n">clf</span> <span class="o">=</span> <span class="n">svm</span><span class="o">.</span><span class="n">LinearSVC</span><span class="p">(</span><span class="n">dual</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="s">&#39;squared_hinge&#39;</span><span class="p">,</span> <span class="n">penalty</span><span class="o">=</span><span class="s">&#39;l1&#39;</span><span class="p">)</span>
@@ -4946,33 +4976,30 @@ Let's see if other algorithm can beat this.</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[36]:</div>
+<div class="prompt input_prompt">In&nbsp;[37]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="kn">from</span> <span class="nn">sklearn.grid_search</span> <span class="kn">import</span> <span class="n">GridSearchCV</span>
-
-<span class="n">data2</span> <span class="o">=</span> <span class="n">featureFormat</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">)</span>
+<div class=" highlight hl-ipython2"><pre><span class="n">data2</span> <span class="o">=</span> <span class="n">featureFormat</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">)</span>
 <span class="n">labels</span><span class="p">,</span> <span class="n">features</span> <span class="o">=</span> <span class="n">targetFeatureSplit</span><span class="p">(</span><span class="n">data2</span><span class="p">)</span>
 
-<span class="c"># Scale the features</span>
-<span class="n">features</span> <span class="o">=</span> <span class="n">MinMaxScaler</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span>
+    <span class="p">[(</span><span class="s">&#39;normalization&#39;</span><span class="p">,</span> <span class="n">scaler</span><span class="p">),</span>
+     <span class="p">(</span><span class="s">&#39;classifier&#39;</span><span class="p">,</span> <span class="n">svm</span><span class="o">.</span><span class="n">LinearSVC</span><span class="p">())</span>
+<span class="p">])</span>
 
 <span class="n">loss</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;hinge&#39;</span><span class="p">,</span> <span class="s">&#39;squared_hinge&#39;</span><span class="p">,</span> <span class="p">]</span>
 <span class="n">penalty</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;l2&#39;</span><span class="p">]</span>
 <span class="n">multi_class</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;ovr&#39;</span><span class="p">,</span> <span class="s">&#39;crammer_singer&#39;</span><span class="p">]</span>
-<span class="n">param_grid</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="n">loss</span><span class="p">,</span> <span class="n">penalty</span><span class="o">=</span><span class="n">penalty</span><span class="p">)</span>
-<span class="n">clf_lsvc</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">svm</span><span class="o">.</span><span class="n">LinearSVC</span><span class="p">(),</span> <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid</span><span class="p">)</span>
+<span class="n">param_grid</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">classifier__loss</span><span class="o">=</span><span class="n">loss</span><span class="p">,</span> <span class="n">classifier__penalty</span><span class="o">=</span><span class="n">penalty</span><span class="p">,</span> <span class="n">classifier__multi_class</span><span class="o">=</span><span class="n">multi_class</span><span class="p">)</span>
+<span class="n">clf_lsvc</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid</span><span class="p">)</span>
 <span class="n">clf_lsvc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
 <span class="k">print</span> <span class="s">&quot;Tuned Linear SVC estimator is: </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">clf_lsvc</span><span class="o">.</span><span class="n">best_estimator_</span>
 <span class="k">print</span> <span class="n">clf_lsvc</span><span class="o">.</span><span class="n">best_score_</span>
 <span class="k">print</span> <span class="s">&quot;&quot;</span>
 <span class="n">clf_lsvc</span> <span class="o">=</span> <span class="n">clf_lsvc</span><span class="o">.</span><span class="n">best_estimator_</span>
 
-<span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([(</span><span class="s">&#39;normalization&#39;</span><span class="p">,</span> <span class="n">scaler</span><span class="p">),</span>
-                     <span class="p">(</span><span class="s">&#39;classifier&#39;</span><span class="p">,</span> <span class="n">clf_lsvc</span><span class="p">)</span>
-<span class="p">])</span>
 
-<span class="n">setup_and_test</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">)</span>
+<span class="n">setup_and_test</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">,</span> <span class="n">clf_lsvc</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -4986,16 +5013,18 @@ Let's see if other algorithm can beat this.</p>
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>Tuned Linear SVC estimator is: 
-LinearSVC(C=1.0, class_weight=None, dual=True, fit_intercept=True,
-     intercept_scaling=1, loss=&apos;hinge&apos;, max_iter=1000, multi_class=&apos;ovr&apos;,
-     penalty=&apos;l2&apos;, random_state=None, tol=0.0001, verbose=0)
-0.861538461538
+Pipeline(steps=[(&apos;normalization&apos;, MinMaxScaler(copy=True, feature_range=(0, 1))), (&apos;classifier&apos;, LinearSVC(C=1.0, class_weight=None, dual=True, fit_intercept=True,
+     intercept_scaling=1, loss=&apos;hinge&apos;, max_iter=1000,
+     multi_class=&apos;crammer_singer&apos;, penalty=&apos;l2&apos;, random_state=None,
+     tol=0.0001, verbose=0))])
+0.869230769231
 
 Pipeline(steps=[(&apos;normalization&apos;, MinMaxScaler(copy=True, feature_range=(0, 1))), (&apos;classifier&apos;, LinearSVC(C=1.0, class_weight=None, dual=True, fit_intercept=True,
-     intercept_scaling=1, loss=&apos;hinge&apos;, max_iter=1000, multi_class=&apos;ovr&apos;,
-     penalty=&apos;l2&apos;, random_state=None, tol=0.0001, verbose=0))])
-	Accuracy: 0.84631	Precision: 0.75000	Recall: 0.00150	F1: 0.00299	F2: 0.00187
-	Total predictions: 13000	True positives:    3	False positives:    1	False negatives: 1997	True negatives: 10999
+     intercept_scaling=1, loss=&apos;hinge&apos;, max_iter=1000,
+     multi_class=&apos;crammer_singer&apos;, penalty=&apos;l2&apos;, random_state=None,
+     tol=0.0001, verbose=0))])
+	Accuracy: 0.84762	Precision: 0.70213	Recall: 0.01650	F1: 0.03224	F2: 0.02050
+	Total predictions: 13000	True positives:   33	False positives:   14	False negatives: 1967	True negatives: 10986
 
 </pre>
 </div>
@@ -5010,7 +5039,7 @@ Pipeline(steps=[(&apos;normalization&apos;, MinMaxScaler(copy=True, feature_rang
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>That is actually terrible, while the precision is up significantly the recall is bad. Also we only predicted 3 True Positives.</p>
+<p>That is actually terrible, while the precision is up significantly the recall is bad.</p>
 <p>Let's add some cross validation to our GridSearchCV, instead of using the default one.</p>
 
 </div>
@@ -5018,35 +5047,32 @@ Pipeline(steps=[(&apos;normalization&apos;, MinMaxScaler(copy=True, feature_rang
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[37]:</div>
+<div class="prompt input_prompt">In&nbsp;[38]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="kn">from</span> <span class="nn">sklearn.cross_validation</span> <span class="kn">import</span> <span class="n">StratifiedShuffleSplit</span>
-
-<span class="n">data2</span> <span class="o">=</span> <span class="n">featureFormat</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">)</span>
+<div class=" highlight hl-ipython2"><pre><span class="n">data2</span> <span class="o">=</span> <span class="n">featureFormat</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">)</span>
 <span class="n">labels</span><span class="p">,</span> <span class="n">features</span> <span class="o">=</span> <span class="n">targetFeatureSplit</span><span class="p">(</span><span class="n">data2</span><span class="p">)</span>
 
-<span class="c"># Scale the features</span>
-<span class="n">features</span> <span class="o">=</span> <span class="n">MinMaxScaler</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([(</span><span class="s">&#39;normalization&#39;</span><span class="p">,</span> <span class="n">scaler</span><span class="p">),</span>
+                     <span class="p">(</span><span class="s">&#39;classifier&#39;</span><span class="p">,</span> <span class="n">svm</span><span class="o">.</span><span class="n">LinearSVC</span><span class="p">())</span>
+<span class="p">])</span>
 
-<span class="n">cv</span> <span class="o">=</span> <span class="n">StratifiedShuffleSplit</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">17</span><span class="p">)</span>
+<span class="n">cv</span> <span class="o">=</span> <span class="n">StratifiedShuffleSplit</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 
 <span class="n">loss</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;hinge&#39;</span><span class="p">,</span> <span class="s">&#39;squared_hinge&#39;</span><span class="p">,</span> <span class="p">]</span>
 <span class="n">penalty</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;l2&#39;</span><span class="p">]</span>
 <span class="n">multi_class</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;ovr&#39;</span><span class="p">,</span> <span class="s">&#39;crammer_singer&#39;</span><span class="p">]</span>
-<span class="n">param_grid</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="n">loss</span><span class="p">,</span> <span class="n">penalty</span><span class="o">=</span><span class="n">penalty</span><span class="p">)</span>
-<span class="n">clf_lsvc</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">svm</span><span class="o">.</span><span class="n">LinearSVC</span><span class="p">(),</span> <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">)</span>
+<span class="n">param_grid</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">classifier__loss</span><span class="o">=</span><span class="n">loss</span><span class="p">,</span> <span class="n">classifier__penalty</span><span class="o">=</span><span class="n">penalty</span><span class="p">,</span> <span class="n">classifier__multi_class</span><span class="o">=</span><span class="n">multi_class</span><span class="p">)</span>
+
+<span class="n">clf_lsvc</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">)</span>
 <span class="n">clf_lsvc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
 
 <span class="k">print</span> <span class="s">&quot;Tuned Linear SVC estimator is: </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">clf_lsvc</span><span class="o">.</span><span class="n">best_estimator_</span>
 <span class="k">print</span> <span class="n">clf_lsvc</span><span class="o">.</span><span class="n">best_score_</span>
 
 <span class="n">clf_lsvc</span> <span class="o">=</span> <span class="n">clf_lsvc</span><span class="o">.</span><span class="n">best_estimator_</span>
-<span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([(</span><span class="s">&#39;normalization&#39;</span><span class="p">,</span> <span class="n">scaler</span><span class="p">),</span>
-                     <span class="p">(</span><span class="s">&#39;classifier&#39;</span><span class="p">,</span> <span class="n">clf_lsvc</span><span class="p">)</span>
-<span class="p">])</span>
 
-<span class="n">setup_and_test</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">)</span>
+<span class="n">setup_and_test</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">,</span> <span class="n">clf_lsvc</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -5060,15 +5086,88 @@ Pipeline(steps=[(&apos;normalization&apos;, MinMaxScaler(copy=True, feature_rang
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>Tuned Linear SVC estimator is: 
-LinearSVC(C=1.0, class_weight=None, dual=True, fit_intercept=True,
-     intercept_scaling=1, loss=&apos;hinge&apos;, max_iter=1000, multi_class=&apos;ovr&apos;,
-     penalty=&apos;l2&apos;, random_state=None, tol=0.0001, verbose=0)
-0.846153846154
 Pipeline(steps=[(&apos;normalization&apos;, MinMaxScaler(copy=True, feature_range=(0, 1))), (&apos;classifier&apos;, LinearSVC(C=1.0, class_weight=None, dual=True, fit_intercept=True,
-     intercept_scaling=1, loss=&apos;hinge&apos;, max_iter=1000, multi_class=&apos;ovr&apos;,
-     penalty=&apos;l2&apos;, random_state=None, tol=0.0001, verbose=0))])
-	Accuracy: 0.84631	Precision: 0.75000	Recall: 0.00150	F1: 0.00299	F2: 0.00187
-	Total predictions: 13000	True positives:    3	False positives:    1	False negatives: 1997	True negatives: 10999
+     intercept_scaling=1, loss=&apos;hinge&apos;, max_iter=1000,
+     multi_class=&apos;crammer_singer&apos;, penalty=&apos;l2&apos;, random_state=None,
+     tol=0.0001, verbose=0))])
+0.846538461538
+Pipeline(steps=[(&apos;normalization&apos;, MinMaxScaler(copy=True, feature_range=(0, 1))), (&apos;classifier&apos;, LinearSVC(C=1.0, class_weight=None, dual=True, fit_intercept=True,
+     intercept_scaling=1, loss=&apos;hinge&apos;, max_iter=1000,
+     multi_class=&apos;crammer_singer&apos;, penalty=&apos;l2&apos;, random_state=None,
+     tol=0.0001, verbose=0))])
+	Accuracy: 0.84769	Precision: 0.71739	Recall: 0.01650	F1: 0.03226	F2: 0.02051
+	Total predictions: 13000	True positives:   33	False positives:   13	False negatives: 1967	True negatives: 10987
+
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's try one more thing. GridSearchCV has a scoring parameter, so let's if we set it to recall, we can get better recall score.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[39]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span class="n">data2</span> <span class="o">=</span> <span class="n">featureFormat</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">)</span>
+<span class="n">labels</span><span class="p">,</span> <span class="n">features</span> <span class="o">=</span> <span class="n">targetFeatureSplit</span><span class="p">(</span><span class="n">data2</span><span class="p">)</span>
+
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([(</span><span class="s">&#39;normalization&#39;</span><span class="p">,</span> <span class="n">scaler</span><span class="p">),</span>
+                     <span class="p">(</span><span class="s">&#39;classifier&#39;</span><span class="p">,</span> <span class="n">svm</span><span class="o">.</span><span class="n">LinearSVC</span><span class="p">())</span>
+<span class="p">])</span>
+
+<span class="n">cv</span> <span class="o">=</span> <span class="n">StratifiedShuffleSplit</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="n">loss</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;hinge&#39;</span><span class="p">,</span> <span class="s">&#39;squared_hinge&#39;</span><span class="p">,</span> <span class="p">]</span>
+<span class="n">penalty</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;l2&#39;</span><span class="p">]</span>
+<span class="n">multi_class</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;ovr&#39;</span><span class="p">,</span> <span class="s">&#39;crammer_singer&#39;</span><span class="p">]</span>
+<span class="n">param_grid</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">classifier__loss</span><span class="o">=</span><span class="n">loss</span><span class="p">,</span> <span class="n">classifier__penalty</span><span class="o">=</span><span class="n">penalty</span><span class="p">,</span> <span class="n">classifier__multi_class</span><span class="o">=</span><span class="n">multi_class</span><span class="p">)</span>
+
+<span class="n">clf_lsvc</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s">&#39;recall&#39;</span><span class="p">)</span>
+<span class="n">clf_lsvc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+
+<span class="k">print</span> <span class="s">&quot;Tuned Linear SVC estimator is: </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">clf_lsvc</span><span class="o">.</span><span class="n">best_estimator_</span>
+<span class="k">print</span> <span class="n">clf_lsvc</span><span class="o">.</span><span class="n">best_score_</span>
+
+<span class="n">clf_lsvc</span> <span class="o">=</span> <span class="n">clf_lsvc</span><span class="o">.</span><span class="n">best_estimator_</span>
+
+<span class="n">setup_and_test</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">,</span> <span class="n">clf_lsvc</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Tuned Linear SVC estimator is: 
+Pipeline(steps=[(&apos;normalization&apos;, MinMaxScaler(copy=True, feature_range=(0, 1))), (&apos;classifier&apos;, LinearSVC(C=1.0, class_weight=None, dual=True, fit_intercept=True,
+     intercept_scaling=1, loss=&apos;squared_hinge&apos;, max_iter=1000,
+     multi_class=&apos;ovr&apos;, penalty=&apos;l2&apos;, random_state=None, tol=0.0001,
+     verbose=0))])
+0.114
+Pipeline(steps=[(&apos;normalization&apos;, MinMaxScaler(copy=True, feature_range=(0, 1))), (&apos;classifier&apos;, LinearSVC(C=1.0, class_weight=None, dual=True, fit_intercept=True,
+     intercept_scaling=1, loss=&apos;squared_hinge&apos;, max_iter=1000,
+     multi_class=&apos;ovr&apos;, penalty=&apos;l2&apos;, random_state=None, tol=0.0001,
+     verbose=0))])
+	Accuracy: 0.84746	Precision: 0.51919	Recall: 0.11500	F1: 0.18829	F2: 0.13621
+	Total predictions: 13000	True positives:  230	False positives:  213	False negatives: 1770	True negatives: 10787
 
 </pre>
 </div>
@@ -5099,7 +5198,7 @@ Pipeline(steps=[(&apos;normalization&apos;, MinMaxScaler(copy=True, feature_rang
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[38]:</div>
+<div class="prompt input_prompt">In&nbsp;[40]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span class="kn">from</span> <span class="nn">sklearn.neighbors</span> <span class="kn">import</span> <span class="n">KNeighborsClassifier</span>
@@ -5145,13 +5244,10 @@ Let's again turn to GridSearchCV to get the best parameter</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[39]:</div>
+<div class="prompt input_prompt">In&nbsp;[41]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="kn">from</span> <span class="nn">sklearn.cross_validation</span> <span class="kn">import</span> <span class="n">StratifiedShuffleSplit</span>
-<span class="kn">from</span> <span class="nn">sklearn.grid_search</span> <span class="kn">import</span> <span class="n">GridSearchCV</span>
-
-<span class="c"># Setup label and features</span>
+<div class=" highlight hl-ipython2"><pre><span class="c"># Setup label and features</span>
 <span class="n">data2</span> <span class="o">=</span> <span class="n">featureFormat</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">)</span>
 <span class="n">labels</span><span class="p">,</span> <span class="n">features</span> <span class="o">=</span> <span class="n">targetFeatureSplit</span><span class="p">(</span><span class="n">data2</span><span class="p">)</span>
 
@@ -5196,7 +5292,7 @@ KNeighborsClassifier(algorithm=&apos;auto&apos;, leaf_size=30, metric=&apos;mink
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[40]:</div>
+<div class="prompt input_prompt">In&nbsp;[42]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span class="n">setup_and_test</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">,</span> <span class="n">clf_knc</span><span class="o">.</span><span class="n">best_estimator_</span><span class="p">)</span>
@@ -5225,6 +5321,149 @@ KNeighborsClassifier(algorithm=&apos;auto&apos;, leaf_size=30, metric=&apos;mink
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We hit our goal of achieving at least 0.3 for both Precision and Recall. However, there is a bit of a problem.
+I have not scale the feature before applying KNeighborsClassifier. For KNeighborsClassifier normalization should be performed all the times. This is because in k-nearest neighbors, the distance between points causes the clustering to happen. So if you are applying k-nearest neighbors on a problem with 2 features with the first feature ranging from 1-10 and the other ranging from 1-1000, then all the clusters will be generated based on the second feature as the difference between 1 to 10 is small as compared to 1-1000 and hence can all be clustered ito a single group.</p>
+<p>Let's try to do that now.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[43]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span class="n">pipe</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span>
+        <span class="p">(</span><span class="s">&#39;scaler&#39;</span><span class="p">,</span> <span class="n">MinMaxScaler</span><span class="p">()),</span>
+        <span class="p">(</span><span class="s">&#39;classifier&#39;</span><span class="p">,</span> <span class="n">KNeighborsClassifier</span><span class="p">())</span>
+    <span class="p">])</span>
+
+<span class="c"># Setup label and features</span>
+<span class="n">data2</span> <span class="o">=</span> <span class="n">featureFormat</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">)</span>
+<span class="n">labels</span><span class="p">,</span> <span class="n">features</span> <span class="o">=</span> <span class="n">targetFeatureSplit</span><span class="p">(</span><span class="n">data2</span><span class="p">)</span>
+
+<span class="c"># Parameters to be tuned</span>
+<span class="n">metrics</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;minkowski&#39;</span><span class="p">,</span> <span class="s">&#39;euclidean&#39;</span><span class="p">,</span> <span class="s">&#39;manhattan&#39;</span><span class="p">]</span>
+<span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uniform&#39;</span><span class="p">,</span> <span class="s">&#39;distance&#39;</span><span class="p">]</span>
+<span class="n">n_neighbors</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">10</span><span class="p">]</span>
+<span class="n">param_grid_knc</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">classifier__metric</span><span class="o">=</span><span class="n">metrics</span><span class="p">,</span> <span class="n">classifier__weights</span><span class="o">=</span><span class="n">weights</span><span class="p">,</span>
+                      <span class="n">classifier__n_neighbors</span><span class="o">=</span><span class="n">n_neighbors</span><span class="p">)</span>
+
+<span class="c"># Setup cross validation</span>
+<span class="n">cv</span> <span class="o">=</span> <span class="n">StratifiedShuffleSplit</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="c"># Run the GridSearch</span>
+<span class="n">clf_knc</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid_knc</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">)</span>
+<span class="n">clf_knc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+
+<span class="n">setup_and_test</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">,</span> <span class="n">clf_knc</span><span class="o">.</span><span class="n">best_estimator_</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Pipeline(steps=[(&apos;scaler&apos;, MinMaxScaler(copy=True, feature_range=(0, 1))), (&apos;classifier&apos;, KNeighborsClassifier(algorithm=&apos;auto&apos;, leaf_size=30, metric=&apos;manhattan&apos;,
+           metric_params=None, n_jobs=1, n_neighbors=3, p=2,
+           weights=&apos;uniform&apos;))])
+	Accuracy: 0.85892	Precision: 0.58058	Recall: 0.29900	F1: 0.39472	F2: 0.33112
+	Total predictions: 13000	True positives:  598	False positives:  432	False negatives: 1402	True negatives: 10568
+
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Close but not good enough. Let's try to utilize the scoring parameter on our GridSearchCV.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[44]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span class="n">pipe</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span>
+        <span class="p">(</span><span class="s">&#39;scaler&#39;</span><span class="p">,</span> <span class="n">MinMaxScaler</span><span class="p">()),</span>
+        <span class="p">(</span><span class="s">&#39;classifier&#39;</span><span class="p">,</span> <span class="n">KNeighborsClassifier</span><span class="p">())</span>
+    <span class="p">])</span>
+
+
+<span class="c"># Setup label and features</span>
+<span class="n">data2</span> <span class="o">=</span> <span class="n">featureFormat</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">)</span>
+<span class="n">labels</span><span class="p">,</span> <span class="n">features</span> <span class="o">=</span> <span class="n">targetFeatureSplit</span><span class="p">(</span><span class="n">data2</span><span class="p">)</span>
+
+<span class="c"># Parameters to be tuned</span>
+<span class="n">metrics</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;minkowski&#39;</span><span class="p">,</span> <span class="s">&#39;euclidean&#39;</span><span class="p">,</span> <span class="s">&#39;manhattan&#39;</span><span class="p">]</span>
+<span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uniform&#39;</span><span class="p">,</span> <span class="s">&#39;distance&#39;</span><span class="p">]</span>
+<span class="n">n_neighbors</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">10</span><span class="p">]</span>
+<span class="n">param_grid_knc</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">classifier__metric</span><span class="o">=</span><span class="n">metrics</span><span class="p">,</span> <span class="n">classifier__weights</span><span class="o">=</span><span class="n">weights</span><span class="p">,</span>
+                      <span class="n">classifier__n_neighbors</span><span class="o">=</span><span class="n">n_neighbors</span><span class="p">)</span>
+
+<span class="c"># Setup cross validation</span>
+<span class="n">cv</span> <span class="o">=</span> <span class="n">StratifiedShuffleSplit</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="c"># Run the GridSearch</span>
+<span class="n">clf_knc</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid_knc</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s">&#39;recall&#39;</span><span class="p">)</span>
+<span class="n">clf_knc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+
+<span class="n">setup_and_test</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">new_feature_list</span><span class="p">,</span> <span class="n">clf_knc</span><span class="o">.</span><span class="n">best_estimator_</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Pipeline(steps=[(&apos;scaler&apos;, MinMaxScaler(copy=True, feature_range=(0, 1))), (&apos;classifier&apos;, KNeighborsClassifier(algorithm=&apos;auto&apos;, leaf_size=30, metric=&apos;minkowski&apos;,
+           metric_params=None, n_jobs=1, n_neighbors=1, p=2,
+           weights=&apos;uniform&apos;))])
+	Accuracy: 0.79262	Precision: 0.32891	Recall: 0.33450	F1: 0.33168	F2: 0.33337
+	Total predictions: 13000	True positives:  669	False positives: 1365	False negatives: 1331	True negatives: 9635
+
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>So with the parameter set, we have met our goal for the project.</p>
+
+</div>
+</div>
 </div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
