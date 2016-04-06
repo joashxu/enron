@@ -8,21 +8,9 @@ from tools.feature_format import featureFormat, targetFeatureSplit
 from tester import dump_classifier_and_data, load_classifier_and_data, test_classifier
 
 
-def setup_and_test(my_dataset, features_list, classifier, evaluation_func=None):
-    # Extract features and labels from dataset for local testing
-    data = featureFormat(my_dataset, features_list, sort_keys = True)
-    labels, features = targetFeatureSplit(data)
-
-    # Setup classifier
-    clf = classifier
-
-    # Evaluate
-    if not evaluation_func:
-        features_train, features_test, labels_train, labels_test = \
-            train_test_split(features, labels, test_size=0.3, random_state=42)
-
+def setup_and_test(my_dataset, features_list, classifier):
     # Dump classifier and features list, so we can test them
-    dump_classifier_and_data(clf, my_dataset, features_list)
+    dump_classifier_and_data(classifier, my_dataset, features_list)
 
     # load up student's classifier, dataset, and feature_list
     clf, dataset, feature_list = load_classifier_and_data()
@@ -54,7 +42,7 @@ def computeFraction(poi_messages, all_messages):
     return 0.
 
 
-def get_k_best_features(data, features_list, k):
+def get_k_best_features(data, features_list, k=10):
     # Setup the label and features
     data = featureFormat(data, features_list, sort_keys = True)
     labels, features = targetFeatureSplit(data)
